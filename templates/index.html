@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    <title>MarketForge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f0f1a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+        header {
+            text-align: center;
+            padding: 2rem 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            margin-bottom: 2rem;
+        }
+        header h1 { font-size: 2rem; font-weight: 700; color: #fff; }
+        header p { color: #cbd5e1; margin-top: 0.5rem; font-size: 0.95rem; }
+        .card {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #2d2d44;
+        }
+        .card h2 { font-size: 1.25rem; margin-bottom: 1rem; color: #a78bfa; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.4rem; color: #94a3b8; }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 0.7rem 0.9rem;
+            background: #16213e;
+            border: 1px solid #2d2d44;
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            transition: border 0.2s;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .form-group.full { grid-column: 1 / -1; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 2rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        .btn:hover { transform: translateY(-1px); opacity: 0.9; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-container { text-align: center; margin-top: 1rem; }
+        .spinner { display: none; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .btn.loading .spinner { display: inline-block; }
+        .btn.loading .btn-text { display: none; }
+        .result-section { display: none; }
+        .result-section.visible { display: block; }
+        .result-card {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border-left: 3px solid #667eea;
+        }
+        .result-card h3 { font-size: 1rem; color: #a78bfa; margin-bottom: 0.5rem; }
+        .result-card p, .result-card li { font-size: 0.9rem; line-height: 1.6; color: #cbd5e1; }
+        .result-card ul { list-style: none; padding: 0; }
+        .result-card ul li::before { content: "\\2022"; color: #667eea; display: inline-block; width: 1em; }
+        .tag {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            background: rgba(102, 126, 234, 0.15);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: #a78bfa;
+            margin: 0.15rem;
+        }
+        .storyboard-text { white-space: pre-wrap; font-size: 0.9rem; line-height: 1.7; color: #cbd5e1; }
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 15, 26, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .loading-overlay.visible { display: flex; }
+        .loading-overlay .spinner-lg { width: 48px; height: 48px; border: 3px solid rgba(102,126,234,0.2); border-top-color: #667eea; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        .loading-overlay p { color: #94a3b8; font-size: 1rem; }
+        .tab-bar { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+        .tab-btn {
+            padding: 0.6rem 1.2rem;
+            background: transparent;
+            border: 1px solid #2d2d44;
+            border-radius: 8px;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .tab-btn.active { background: #667eea; color: #fff; border-color: #667eea; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        @media (max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .container { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-lg"></div>
+        <p>Generating marketing assets with AI...</p>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>MarketForge</h1>
+            <p>AI-powered marketing asset generator &mdash; briefs, ad copies &amp; storyboards</p>
+        </header>
+
+        <div class="card">
+            <h2>Product Details</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Product Name</label>
+                    <input type="text" id="productName" placeholder="e.g. iPhone 16 Pro" value="">
+                </div>
+                <div class="form-group">
+                    <label>Launch Timeline</label>
+                    <input type="text" id="timeline" placeholder="e.g. Sep 2026" value="">
+                </div>
+                <div class="form-group full">
+                    <label>Short Description</label>
+                    <textarea id="description" placeholder="Describe the product's key features, USP, target audience..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Target Countries</label>
+                    <input type="text" id="targetCountries" placeholder="e.g. US, UK, India" value="">
+                </div>
+                <div class="form-group">
+                    <label>Tech Specs</label>
+                    <input type="text" id="specs" placeholder="e.g. 48MP camera, A18 chip, 4500mAh" value="">
+                </div>
+            </div>
+            <div class="btn-container">
+                <button class="btn" id="generateBtn" onclick="generate()">
+                    <span class="btn-text">Generate Marketing Assets</span>
+                    <div class="spinner"></div>
+                </button>
+            </div>
+        </div>
+
+        <div class="result-section" id="resultSection">
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="switchTab('brief', this)">Campaign Brief</button>
+                <button class="tab-btn" onclick="switchTab('adcopy', this)">Ad Copy</button>
+                <button class="tab-btn" onclick="switchTab('storyboard', this)">Storyboard</button>
+            </div>
+
+            <div class="tab-content active" id="tabBrief">
+                <div class="result-card"><h3>Campaign Name</h3><p id="rCampaignName"></p></div>
+                <div class="result-card"><h3>Objectives</h3><ul id="rObjectives"></ul></div>
+                <div class="result-card"><h3>Target Audience</h3><p id="rAudience"></p></div>
+                <div class="result-card"><h3>Media Strategy</h3><div id="rMediaStrategy"></div></div>
+                <div class="result-card"><h3>Timeline</h3><p id="rTimeline"></p></div>
+                <div class="result-card"><h3>Target Countries</h3><div id="rCountries"></div></div>
+                <div class="result-card"><h3>Performance Metrics</h3><div id="rMetrics"></div></div>
+            </div>
+
+            <div class="tab-content" id="tabAdCopy">
+                <div class="result-card"><h3>Ad Copy Options</h3><ul id="rAdOptions"></ul></div>
+                <div class="result-card"><h3>Localization Notes</h3><ul id="rLocalNotes"></ul></div>
+                <div class="result-card"><h3>Visual Descriptions</h3><ul id="rVisuals"></ul></div>
+            </div>
+
+            <div class="tab-content" id="tabStoryboard">
+                <div class="result-card"><div class="storyboard-text" id="rStoryboard"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+        }
+
+        async function generate() {
+            const btn = document.getElementById('generateBtn');
+            const overlay = document.getElementById('loadingOverlay');
+            const data = {
+                product_name: document.getElementById('productName').value,
+                description: document.getElementById('description').value,
+                target_countries: document.getElementById('targetCountries').value,
+                timeline: document.getElementById('timeline').value,
+                specs: document.getElementById('specs').value,
+            };
+
+            if (!data.product_name) { alert('Please enter a product name'); return; }
+
+            btn.classList.add('loading');
+            btn.disabled = true;
+            overlay.classList.add('visible');
+
+            try {
+                const res = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+                const result = await res.json();
+
+                if (result.error) {
+                    alert('Error: ' + result.error);
+                    return;
+                }
+
+                const b = result.brief;
+                document.getElementById('rCampaignName').textContent = b.campaign_name || '-';
+                document.getElementById('rObjectives').innerHTML = (b.campaign_objectives || []).map(o => '<li>' + o + '</li>').join('');
+                document.getElementById('rAudience').textContent = b.target_audience || '-';
+                document.getElementById('rMediaStrategy').innerHTML = (b.media_strategy || []).map(s => '<span class="tag">' + s + '</span>').join('');
+                document.getElementById('rTimeline').textContent = b.timeline || '-';
+                document.getElementById('rCountries').innerHTML = (b.target_countries || []).map(c => '<span class="tag">' + c + '</span>').join('');
+                document.getElementById('rMetrics').innerHTML = (b.performance_metrics || []).map(m => '<span class="tag">' + m + '</span>').join('');
+
+                const a = result.ad_copy;
+                document.getElementById('rAdOptions').innerHTML = (a.ad_copy_options || []).map(o => '<li>' + o + '</li>').join('');
+                document.getElementById('rLocalNotes').innerHTML = (a.localization_notes || []).map(n => '<li>' + n + '</li>').join('');
+                document.getElementById('rVisuals').innerHTML = (a.visual_description || []).map(v => '<li>' + v + '</li>').join('');
+
+                document.getElementById('rStoryboard').textContent = result.storyboard || '-';
+
+                document.getElementById('resultSection').classList.add('visible');
+            } catch (e) {
+                alert('Request failed: ' + e.message);
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+                overlay.classList.remove('visible');
+            }
+        }
+
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("/static/sw.js");
+            });
+        }
+    </script>
+</body>
+</html>
